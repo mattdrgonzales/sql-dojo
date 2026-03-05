@@ -1,12 +1,14 @@
 import { healthcareChallenges } from "./healthcare";
+import { insuranceChallenges } from "./insurance";
+import { retailChallenges } from "./retail";
+import { educationChallenges } from "./education";
 import type { Challenge, Industry, Tier } from "./types";
 
-// For now, healthcare is fully built. Other industries will be added.
 const challengesByIndustry: Record<Industry, Challenge[]> = {
   healthcare: healthcareChallenges,
-  insurance: [],
-  retail: [],
-  education: [],
+  insurance: insuranceChallenges,
+  retail: retailChallenges,
+  education: educationChallenges,
 };
 
 export function getChallenges(industry: Industry): Challenge[] {

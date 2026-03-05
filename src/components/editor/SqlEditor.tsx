@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect } from "react";
 import { EditorState } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { basicSetup } from "codemirror";
@@ -33,9 +33,20 @@ export default function SqlEditor({ value, onChange, onRun }: SqlEditorProps) {
         sql({ dialect: SQLite }),
         oneDark,
         EditorView.theme({
-          "&": { fontSize: "14px", maxHeight: "300px" },
+          "&": {
+            fontSize: "14px",
+            maxHeight: "300px",
+            background: "var(--color-surface-2)",
+          },
           ".cm-scroller": { overflow: "auto" },
-          ".cm-content": { fontFamily: "var(--font-geist-mono), monospace" },
+          ".cm-content": { fontFamily: "var(--font-code)" },
+          ".cm-gutters": {
+            background: "var(--color-surface-1)",
+            borderRight: "1px solid var(--color-border)",
+          },
+          "&.cm-focused": {
+            outline: "none",
+          },
         }),
         keymap.of([
           {
@@ -78,13 +89,26 @@ export default function SqlEditor({ value, onChange, onRun }: SqlEditorProps) {
     <div className="flex flex-col gap-2">
       <div
         ref={editorRef}
-        className="overflow-hidden rounded-lg border border-zinc-700"
+        className="overflow-hidden rounded-lg"
+        style={{ border: "1px solid var(--color-border-strong)" }}
       />
       <div className="flex items-center justify-between">
-        <span className="text-xs text-zinc-500">Cmd/Ctrl + Enter to run</span>
+        <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+          Cmd/Ctrl + Enter to run
+        </span>
         <button
           onClick={onRun}
-          className="rounded-md bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
+          className="cursor-pointer rounded-md px-4 py-1.5 text-sm font-medium transition-colors focus-ring"
+          style={{
+            background: "var(--color-primary)",
+            color: "var(--color-background)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = "0.9";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = "1";
+          }}
         >
           Run Query
         </button>

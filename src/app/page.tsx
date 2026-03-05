@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import type { Industry, Tier } from "@/challenges/types";
 import { getChallengesByTier, getChallenge, getAvailableTiers } from "@/challenges/index";
 import { industryData } from "@/data/index";
-import { initIndustryDb } from "@/engine/sql";
+import { initIndustryDb, executeQuery } from "@/engine/sql";
 import { validateQuery } from "@/engine/validate";
 import type { QueryResult, QueryError } from "@/engine/sql";
 import SqlEditor from "@/components/editor/SqlEditor";
@@ -13,9 +13,10 @@ import { ChallengeDetail } from "@/components/challenge/ChallengeCard";
 import SchemaViewer from "@/components/schema/SchemaViewer";
 import Sidebar from "@/components/layout/Sidebar";
 import LessonView from "@/components/learn/LessonView";
+import CheatSheet from "@/components/reference/CheatSheet";
 import { useProgress } from "@/hooks/useProgress";
 
-type AppMode = "learn" | "practice";
+type AppMode = "learn" | "practice" | "sandbox";
 
 export default function Home() {
   const [mode, setMode] = useState<AppMode>("learn");
@@ -30,6 +31,15 @@ export default function Home() {
   const [hintLevel, setHintLevel] = useState(0);
   const [validationStatus, setValidationStatus] = useState<"correct" | "wrong" | "error" | null>(null);
   const [showExpected, setShowExpected] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cheatSheetOpen, setCheatSheetOpen] = useState(false);
+  const [learnSidebarOpen, setLearnSidebarOpen] = useState(false);
+
+  // Sandbox state
+  const [sandboxSql, setSandboxSql] = useState("");
+  const [sandboxResult, setSandboxResult] = useState<QueryResult | QueryError | null>(null);
+  const [sandboxLoading, setSandboxLoading] = useState(false);
+  const [sandboxIndustry, setSandboxIndustry] = useState<Industry>("healthcare");
 
   const { completedIds, markComplete } = useProgress();
 
@@ -40,13 +50,17 @@ export default function Home() {
     : null;
 
   const data = industryData[industry];
+  const sandboxData = industryData[sandboxIndustry];
 
-  // Initialize DB when industry changes
+  // Initialize DB when industry changes (practice/learn use main industry, sandbox uses its own)
+  const activeIndustry = mode === "sandbox" ? sandboxIndustry : industry;
+  const activeData = mode === "sandbox" ? sandboxData : data;
+
   useEffect(() => {
     setDbReady(false);
-    const setupSql = data.schema + "\n" + data.seed();
+    const setupSql = activeData.schema + "\n" + activeData.seed();
     initIndustryDb(setupSql).then(() => setDbReady(true));
-  }, [industry, data]);
+  }, [activeIndustry, activeData]);
 
   // Select first challenge when tier/industry changes
   useEffect(() => {
@@ -94,41 +108,77 @@ export default function Home() {
     setIsLoading(false);
   }, [sql, dbReady, activeChallenge, markComplete]);
 
+  const handleSandboxRun = useCallback(async () => {
+    if (!sandboxSql.trim() || !dbReady) return;
+    setSandboxLoading(true);
+    const res = await executeQuery(sandboxSql);
+    setSandboxResult(res);
+    setSandboxLoading(false);
+  }, [sandboxSql, dbReady]);
+
+  const modeButtons: { key: AppMode; label: string }[] = [
+    { key: "learn", label: "Learn" },
+    { key: "practice", label: "Practice" },
+    { key: "sandbox", label: "Sandbox" },
+  ];
+
   return (
-    <div className="flex h-screen flex-col bg-zinc-950 text-zinc-100">
-      {/* Top bar */}
-      <header className="flex items-center justify-between border-b border-zinc-800 px-6 py-3">
-        <div className="flex items-center gap-6">
-          <h1 className="text-lg font-bold tracking-tight">SQL Dojo</h1>
-          <nav className="flex gap-1 rounded-lg bg-zinc-900 p-0.5">
+    <div className="flex h-screen flex-col" style={{ background: "var(--color-background)", color: "var(--color-text)" }}>
+      {/* Header */}
+      <header className="flex items-center justify-between px-4 py-2.5 md:px-6"
+        style={{ borderBottom: "1px solid var(--color-border)" }}
+      >
+        <div className="flex items-center gap-3 md:gap-6">
+          {/* Mobile menu button */}
+          {(mode === "practice" || mode === "learn") && (
             <button
-              onClick={() => setMode("learn")}
-              className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-                mode === "learn"
-                  ? "bg-zinc-700 text-zinc-100"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
+              onClick={() => mode === "practice" ? setSidebarOpen(true) : setLearnSidebarOpen(true)}
+              className="cursor-pointer rounded p-1 transition-colors hover:bg-white/5 lg:hidden focus-ring"
+              aria-label="Open menu"
             >
-              Learn
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M3 5h14M3 10h14M3 15h14" />
+              </svg>
             </button>
-            <button
-              onClick={() => setMode("practice")}
-              className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-                mode === "practice"
-                  ? "bg-zinc-700 text-zinc-100"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Practice
-            </button>
+          )}
+
+          <h1 className="text-base font-bold tracking-tight md:text-lg"
+            style={{ fontFamily: "var(--font-heading)", color: "var(--color-text)" }}
+          >
+            SQL <span style={{ color: "var(--color-primary)" }}>Dojo</span>
+          </h1>
+
+          <nav className="flex gap-0.5 rounded-lg p-0.5"
+            style={{ background: "var(--color-surface-1)" }}
+          >
+            {modeButtons.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setMode(key)}
+                className="cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium transition-colors md:px-3 md:text-sm focus-ring"
+                style={{
+                  background: mode === key ? "var(--color-surface-3)" : "transparent",
+                  color: mode === key ? "var(--color-text)" : "var(--color-text-muted)",
+                }}
+              >
+                {label}
+              </button>
+            ))}
           </nav>
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-2 md:gap-3">
+          {/* Industry selector for practice mode */}
           {mode === "practice" && (
             <select
               value={industry}
               onChange={(e) => handleIndustryChange(e.target.value as Industry)}
-              className="rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-300 outline-none focus:border-emerald-600"
+              className="hidden cursor-pointer rounded-md px-2 py-1 text-sm outline-none md:block focus-ring"
+              style={{
+                background: "var(--color-surface-2)",
+                border: "1px solid var(--color-border)",
+                color: "var(--color-text-secondary)",
+              }}
             >
               {Object.keys(industryData).map((ind) => (
                 <option key={ind} value={ind}>
@@ -137,10 +187,50 @@ export default function Home() {
               ))}
             </select>
           )}
+
+          {/* Sandbox industry selector */}
+          {mode === "sandbox" && (
+            <select
+              value={sandboxIndustry}
+              onChange={(e) => {
+                setSandboxIndustry(e.target.value as Industry);
+                setSandboxResult(null);
+              }}
+              className="cursor-pointer rounded-md px-2 py-1 text-sm outline-none focus-ring"
+              style={{
+                background: "var(--color-surface-2)",
+                border: "1px solid var(--color-border)",
+                color: "var(--color-text-secondary)",
+              }}
+            >
+              {Object.keys(industryData).map((ind) => (
+                <option key={ind} value={ind}>
+                  {ind.charAt(0).toUpperCase() + ind.slice(1)}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Cheat sheet toggle */}
+          <button
+            onClick={() => setCheatSheetOpen(!cheatSheetOpen)}
+            className="cursor-pointer rounded-md px-2 py-1 text-xs font-medium transition-colors md:px-2.5 md:text-sm focus-ring"
+            style={{
+              border: `1px solid ${cheatSheetOpen ? "var(--color-primary)" : "var(--color-border)"}`,
+              color: cheatSheetOpen ? "var(--color-primary)" : "var(--color-text-tertiary)",
+              background: cheatSheetOpen ? "rgba(6, 182, 212, 0.08)" : "transparent",
+            }}
+            title="SQL Reference"
+          >
+            <span className="hidden md:inline">Reference</span>
+            <span className="md:hidden">Ref</span>
+          </button>
+
+          {/* DB status */}
           {!dbReady ? (
-            <span className="text-xs text-amber-400">Loading database...</span>
+            <span className="text-xs" style={{ color: "var(--color-warning)" }}>Loading...</span>
           ) : (
-            <span className="text-xs text-emerald-500">DB ready</span>
+            <span className="hidden text-xs md:inline" style={{ color: "var(--color-success)" }}>Ready</span>
           )}
         </div>
       </header>
@@ -148,10 +238,21 @@ export default function Home() {
       {/* Learn mode */}
       {mode === "learn" && (
         <div className="flex flex-1 overflow-hidden">
-          <LessonView dbReady={dbReady} />
-          <div className="w-56 flex-shrink-0 overflow-y-auto border-l border-zinc-800 p-4">
-            <SchemaViewer tables={data.tables} />
+          <div className="flex flex-1 overflow-hidden">
+            <LessonView
+              dbReady={dbReady}
+              isSidebarOpen={learnSidebarOpen}
+              onToggleSidebar={() => setLearnSidebarOpen(false)}
+            />
+            <div className="hidden w-56 flex-shrink-0 overflow-y-auto p-4 lg:block"
+              style={{ borderLeft: "1px solid var(--color-border)" }}
+            >
+              <SchemaViewer tables={data.tables} />
+            </div>
           </div>
+          {cheatSheetOpen && (
+            <CheatSheet isOpen={cheatSheetOpen} onClose={() => setCheatSheetOpen(false)} />
+          )}
         </div>
       )}
 
@@ -168,10 +269,12 @@ export default function Home() {
             onSelectIndustry={handleIndustryChange}
             onSelectTier={setTier}
             onSelectChallenge={setActiveChallengeId}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
           />
 
           <div className="flex flex-1 overflow-hidden">
-            <div className="flex flex-1 flex-col overflow-y-auto p-6">
+            <div className="flex flex-1 flex-col overflow-y-auto p-4 md:p-6">
               {activeChallenge ? (
                 <>
                   <ChallengeDetail
@@ -186,14 +289,15 @@ export default function Home() {
                   </div>
 
                   <div className="mt-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-sm font-medium text-zinc-400">
+                    <div className="mb-2 flex items-center gap-3">
+                      <h3 className="text-sm font-medium" style={{ color: "var(--color-text-tertiary)" }}>
                         Your Results
                       </h3>
                       {showExpected && expectedResult && (
                         <button
                           onClick={() => setShowExpected((s) => !s)}
-                          className="text-xs text-amber-400 hover:text-amber-300"
+                          className="cursor-pointer text-xs transition-colors"
+                          style={{ color: "var(--color-warning)" }}
                         >
                           {showExpected ? "Show expected" : "Hide expected"}
                         </button>
@@ -204,26 +308,78 @@ export default function Home() {
 
                   {showExpected && expectedResult && (
                     <div className="mt-4">
-                      <h3 className="mb-2 text-sm font-medium text-amber-400">
+                      <h3 className="mb-2 text-sm font-medium" style={{ color: "var(--color-warning)" }}>
                         Expected Results
                       </h3>
                       <ResultsTable result={expectedResult} isLoading={false} />
                     </div>
                   )}
+
+                  {/* Mobile schema toggle */}
+                  <div className="mt-4 lg:hidden">
+                    <SchemaViewer tables={data.tables} isCollapsible />
+                  </div>
                 </>
               ) : (
                 <div className="flex flex-1 items-center justify-center">
-                  <p className="text-zinc-600">
-                    Select a challenge to get started
+                  <p style={{ color: "var(--color-text-muted)" }}>
+                    Pick a challenge to begin
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="w-56 overflow-y-auto border-l border-zinc-800 p-4">
+            {/* Desktop schema panel */}
+            <div className="hidden w-56 overflow-y-auto p-4 lg:block"
+              style={{ borderLeft: "1px solid var(--color-border)" }}
+            >
               <SchemaViewer tables={data.tables} />
             </div>
           </div>
+
+          {cheatSheetOpen && (
+            <CheatSheet isOpen={cheatSheetOpen} onClose={() => setCheatSheetOpen(false)} />
+          )}
+        </div>
+      )}
+
+      {/* Sandbox mode */}
+      {mode === "sandbox" && (
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-1 flex-col overflow-y-auto p-4 md:p-6">
+            <div className="mx-auto w-full max-w-4xl">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>
+                  SQL Sandbox
+                </h2>
+                <p className="mt-1 text-sm" style={{ color: "var(--color-text-tertiary)" }}>
+                  Run any query against the {sandboxIndustry} dataset. No rules, no validation.
+                </p>
+              </div>
+
+              <SqlEditor value={sandboxSql} onChange={setSandboxSql} onRun={handleSandboxRun} />
+
+              <div className="mt-4">
+                <ResultsTable result={sandboxResult} isLoading={sandboxLoading} />
+              </div>
+
+              {/* Mobile schema toggle */}
+              <div className="mt-4 lg:hidden">
+                <SchemaViewer tables={sandboxData.tables} isCollapsible />
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop schema panel */}
+          <div className="hidden w-56 flex-shrink-0 overflow-y-auto p-4 lg:block"
+            style={{ borderLeft: "1px solid var(--color-border)" }}
+          >
+            <SchemaViewer tables={sandboxData.tables} />
+          </div>
+
+          {cheatSheetOpen && (
+            <CheatSheet isOpen={cheatSheetOpen} onClose={() => setCheatSheetOpen(false)} />
+          )}
         </div>
       )}
     </div>
