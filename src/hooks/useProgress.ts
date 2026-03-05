@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-const STORAGE_KEY = "sql-dojo-progress";
+const STORAGE_KEY = "sqlbot-progress";
 
 interface ProgressData {
   completed: string[];
