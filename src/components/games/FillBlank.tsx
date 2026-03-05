@@ -95,7 +95,7 @@ export default function FillBlank({ question, onAnswer }: Props) {
       {/* Show correct answer if wrong */}
       {revealed && !isCorrect && (
         <div className="text-sm" style={{ color: "var(--color-warning)" }}>
-          Answer: <span style={{ fontFamily: "var(--font-code)" }}>{question.answer}</span>
+          Correct answer: <span style={{ fontFamily: "var(--font-code)" }}>{question.answer}</span>
         </div>
       )}
 

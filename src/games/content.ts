@@ -51,7 +51,7 @@ export const questions: Question[] = [
       "Filters out NULL values",
     ],
     correctIndex: 1,
-    explanation: "DISTINCT eliminates duplicate rows. SELECT DISTINCT state FROM customers returns each state only once.",
+    explanation: "DISTINCT removes duplicate rows. SELECT DISTINCT state FROM customers returns each state once.",
   },
   {
     type: "query-order",
@@ -86,7 +86,7 @@ export const questions: Question[] = [
     type: "spot-the-bug",
     id: "sb-b-01",
     module: "basics",
-    question: "This query has an error. What's wrong?",
+    question: "Find the error in this query:",
     buggyQuery: "SELECT name city FROM facilities;",
     options: [
       "Missing comma between name and city",
@@ -107,7 +107,7 @@ export const questions: Question[] = [
     question: "Which keyword filters rows in a SQL query?",
     options: ["FROM", "SELECT", "WHERE", "GROUP BY"],
     correctIndex: 2,
-    explanation: "WHERE filters rows based on a condition. Only rows that satisfy the condition are returned.",
+    explanation: "WHERE filters rows based on a condition. Only matching rows are returned.",
   },
   {
     type: "multiple-choice",
@@ -121,7 +121,7 @@ export const questions: Question[] = [
       "WHERE column EQUALS NULL",
     ],
     correctIndex: 1,
-    explanation: "NULL is not a value — it's the absence of one. You must use IS NULL or IS NOT NULL. The = operator won't work.",
+    explanation: "NULL isn't a value — it's the absence of one. Use IS NULL or IS NOT NULL. The = operator doesn't work with NULL.",
   },
   {
     type: "multiple-choice",
@@ -175,7 +175,7 @@ export const questions: Question[] = [
     type: "spot-the-bug",
     id: "sb-f-01",
     module: "filtering",
-    question: "This query tries to find NULL values. What's wrong?",
+    question: "This query checks for NULL values. What's wrong?",
     buggyQuery: "SELECT * FROM claims WHERE resolved_date = NULL;",
     options: [
       "Should use IS NULL instead of = NULL",
@@ -185,13 +185,13 @@ export const questions: Question[] = [
     ],
     correctIndex: 0,
     fixedQuery: "SELECT * FROM claims WHERE resolved_date IS NULL;",
-    explanation: "NULL isn't a value, so = doesn't work. You must use IS NULL to check for missing data.",
+    explanation: "NULL isn't a value, so = doesn't work. Use IS NULL to check for missing data.",
   },
   {
     type: "spot-the-bug",
     id: "sb-f-02",
     module: "filtering",
-    question: "This query should find facilities named 'Memorial'. What's wrong?",
+    question: "This query should match facilities named 'Memorial'. What's wrong?",
     buggyQuery: "SELECT * FROM facilities WHERE name LIKE 'Memorial';",
     options: [
       "Missing % wildcards",
@@ -221,7 +221,7 @@ export const questions: Question[] = [
     question: "What is the default sort direction for ORDER BY?",
     options: ["DESC (descending)", "ASC (ascending)", "Random", "By primary key"],
     correctIndex: 1,
-    explanation: "ORDER BY defaults to ASC — smallest to largest, A to Z, oldest to newest.",
+    explanation: "ORDER BY defaults to ASC: smallest to largest, A to Z, oldest to newest.",
   },
   {
     type: "multiple-choice",
@@ -270,7 +270,7 @@ export const questions: Question[] = [
     ],
     correctIndex: 0,
     fixedQuery: "SELECT name, bed_count FROM facilities ORDER BY bed_count DESC LIMIT 5;",
-    explanation: "LIMIT must come after ORDER BY. Otherwise you limit first (random 5 rows) then sort those.",
+    explanation: "LIMIT must come after ORDER BY. Otherwise you get 5 arbitrary rows, then sort those.",
   },
 
   // ─── AGGREGATION ──────────────────────────────────────
@@ -300,7 +300,7 @@ export const questions: Question[] = [
       "Only the grouped column",
     ],
     correctIndex: 1,
-    explanation: "In SELECT, you can use columns from GROUP BY plus aggregate functions (COUNT, SUM, AVG, etc.). Other columns would be ambiguous.",
+    explanation: "SELECT can include grouped columns and aggregate functions (COUNT, SUM, AVG, etc.). Other columns are ambiguous — the engine doesn't know which row's value to pick.",
   },
   {
     type: "multiple-choice",
@@ -314,7 +314,7 @@ export const questions: Question[] = [
       "WHERE works with text; HAVING works with numbers",
     ],
     correctIndex: 1,
-    explanation: "WHERE filters individual rows before GROUP BY runs. HAVING filters groups after aggregation. Use HAVING with aggregate functions.",
+    explanation: "WHERE filters rows before GROUP BY runs. HAVING filters groups after aggregation. Use HAVING with aggregate functions like COUNT or SUM.",
   },
   {
     type: "fill-blank",
@@ -349,7 +349,7 @@ export const questions: Question[] = [
     type: "spot-the-bug",
     id: "sb-a-01",
     module: "aggregation",
-    question: "This query has an error. What's wrong?",
+    question: "Find the error in this query:",
     buggyQuery: "SELECT state, COUNT(*) FROM patients WHERE COUNT(*) > 50 GROUP BY state;",
     options: [
       "Should use HAVING instead of WHERE for aggregate filters",
@@ -359,7 +359,7 @@ export const questions: Question[] = [
     ],
     correctIndex: 0,
     fixedQuery: "SELECT state, COUNT(*) FROM patients GROUP BY state HAVING COUNT(*) > 50;",
-    explanation: "You can't use aggregate functions like COUNT(*) in WHERE. Use HAVING to filter groups after aggregation.",
+    explanation: "Aggregate functions like COUNT(*) can't go in WHERE — rows haven't been grouped yet. Use HAVING to filter after aggregation.",
   },
 
   // ─── JOINS ────────────────────────────────────────────
@@ -375,7 +375,7 @@ export const questions: Question[] = [
       "All rows from the right table",
     ],
     correctIndex: 1,
-    explanation: "INNER JOIN (or just JOIN) returns only rows that have a match in both tables. No match = row excluded.",
+    explanation: "INNER JOIN returns only rows with a match in both tables. No match means the row is excluded.",
   },
   {
     type: "multiple-choice",
@@ -389,7 +389,7 @@ export const questions: Question[] = [
       "Random rows from both tables",
     ],
     correctIndex: 2,
-    explanation: "LEFT JOIN keeps all rows from the left table. If no match exists in the right table, those columns show NULL.",
+    explanation: "LEFT JOIN keeps every row from the left table. When no match exists in the right table, those columns fill with NULL.",
   },
   {
     type: "multiple-choice",
@@ -403,7 +403,7 @@ export const questions: Question[] = [
       "The sort order",
     ],
     correctIndex: 2,
-    explanation: "ON defines the matching condition — which column in table A corresponds to which column in table B.",
+    explanation: "ON defines the join condition: which column in one table matches which column in the other.",
   },
   {
     type: "fill-blank",
@@ -433,7 +433,7 @@ export const questions: Question[] = [
     type: "spot-the-bug",
     id: "sb-j-01",
     module: "joins",
-    question: "This JOIN query has an error. What's wrong?",
+    question: "Find the error in this JOIN:",
     buggyQuery: "SELECT * FROM orders JOIN customers ON customer_id = id;",
     options: [
       "Ambiguous column names — need table prefixes",
@@ -443,7 +443,7 @@ export const questions: Question[] = [
     ],
     correctIndex: 0,
     fixedQuery: "SELECT * FROM orders o JOIN customers c ON o.customer_id = c.id;",
-    explanation: "Both tables have an 'id' column, so SQL doesn't know which one you mean. Use table aliases: o.customer_id = c.id.",
+    explanation: "Both tables have an 'id' column, so the engine can't resolve which you mean. Prefix with table aliases: o.customer_id = c.id.",
   },
   {
     type: "spot-the-bug",
@@ -459,7 +459,7 @@ export const questions: Question[] = [
     ],
     correctIndex: 0,
     fixedQuery: "SELECT p.* FROM patients p LEFT JOIN claims c ON p.id = c.patient_id WHERE c.id IS NULL;",
-    explanation: "INNER JOIN excludes non-matching rows, so WHERE c.id IS NULL would return nothing. LEFT JOIN keeps all patients, then the WHERE filters to those with no matching claims.",
+    explanation: "INNER JOIN drops non-matching rows, so WHERE c.id IS NULL returns nothing. LEFT JOIN keeps all patients, then WHERE filters to those with no claims.",
   },
 
   // ─── ADVANCED ─────────────────────────────────────────
@@ -475,7 +475,7 @@ export const questions: Question[] = [
       "An index for faster queries",
     ],
     correctIndex: 1,
-    explanation: "A CTE creates a temporary, named result set that only exists for the duration of that single query.",
+    explanation: "A CTE defines a temporary, named result set scoped to a single query. It disappears after execution.",
   },
   {
     type: "multiple-choice",
@@ -489,7 +489,7 @@ export const questions: Question[] = [
       "ROW_NUMBER only works with ORDER BY",
     ],
     correctIndex: 1,
-    explanation: "ROW_NUMBER always assigns unique sequential numbers (1,2,3). RANK gives the same number to ties (1,1,3 — skipping 2).",
+    explanation: "ROW_NUMBER assigns unique sequential numbers (1, 2, 3). RANK assigns the same number to ties and skips the next (1, 1, 3).",
   },
   {
     type: "multiple-choice",
@@ -503,7 +503,7 @@ export const questions: Question[] = [
       "Creates a new column",
     ],
     correctIndex: 1,
-    explanation: "PARTITION BY groups rows for the window function, like GROUP BY does for aggregates — but without collapsing rows.",
+    explanation: "PARTITION BY splits rows into groups for the window calculation — like GROUP BY for aggregates, but without collapsing rows.",
   },
   {
     type: "fill-blank",
@@ -513,7 +513,7 @@ export const questions: Question[] = [
     template: "SELECT amount, _____ WHEN amount > 5000 THEN 'Large' ELSE 'Small' END AS label FROM claims;",
     answer: "CASE",
     acceptableAnswers: ["CASE", "case", "Case"],
-    explanation: "CASE WHEN ... THEN ... ELSE ... END is SQL's conditional logic — like an if/else statement.",
+    explanation: "CASE WHEN ... THEN ... ELSE ... END is SQL's conditional logic. Think of it as an inline if/else.",
   },
   {
     type: "fill-blank",
@@ -543,7 +543,7 @@ export const questions: Question[] = [
     type: "spot-the-bug",
     id: "sb-v-01",
     module: "advanced",
-    question: "This window function has an error. What's wrong?",
+    question: "Does this window function have a bug?",
     buggyQuery: "SELECT name, RANK() OVER (ORDER BY amount) AS rank FROM claims;",
     options: [
       "RANK() needs a column argument",
@@ -553,7 +553,7 @@ export const questions: Question[] = [
     ],
     correctIndex: 2,
     fixedQuery: "SELECT name, RANK() OVER (ORDER BY amount) AS rank FROM claims;",
-    explanation: "This is valid. RANK() takes no arguments. PARTITION BY is optional — without it, the entire result set is one partition.",
+    explanation: "This query is valid. RANK() takes no arguments, and PARTITION BY is optional. Without it, the entire result set is one partition.",
   },
 ];
 

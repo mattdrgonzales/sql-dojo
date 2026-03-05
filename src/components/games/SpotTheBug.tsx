@@ -92,7 +92,7 @@ export default function SpotTheBug({ question, onAnswer }: Props) {
             <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider"
               style={{ color: "var(--color-success)" }}
             >
-              Fixed query
+              Corrected
             </p>
             <pre className="whitespace-pre-wrap text-sm"
               style={{
