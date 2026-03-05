@@ -15,6 +15,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import LessonView from "@/components/learn/LessonView";
 import QuizView from "@/components/games/QuizView";
 import CheatSheet from "@/components/reference/CheatSheet";
+import StatsBar from "@/components/layout/StatsBar";
 import { useProgress } from "@/hooks/useProgress";
 
 type AppMode = "learn" | "quiz" | "practice" | "sandbox";
@@ -43,7 +44,8 @@ export default function Home() {
   const [sandboxLoading, setSandboxLoading] = useState(false);
   const [sandboxIndustry, setSandboxIndustry] = useState<Industry>("healthcare");
 
-  const { completedIds, markComplete } = useProgress();
+  const progress = useProgress();
+  const { completedIds, markComplete, xp, streak, level, recordQuizAnswer, breakStreak } = progress;
 
   const challenges = getChallengesByTier(industry, tier);
   const availableTiers = getAvailableTiers(industry);
@@ -59,10 +61,11 @@ export default function Home() {
   const activeData = mode === "sandbox" ? sandboxData : data;
 
   useEffect(() => {
+    if (mode === "quiz") return; // quiz doesn't need DB
     setDbReady(false);
     const setupSql = activeData.schema + "\n" + activeData.seed();
     initIndustryDb(setupSql).then(() => setDbReady(true));
-  }, [activeIndustry, activeData]);
+  }, [activeIndustry, activeData, mode]);
 
   // Select first challenge when tier/industry changes
   useEffect(() => {
@@ -101,14 +104,13 @@ export default function Home() {
 
     if (validation.status === "correct") {
       markComplete(activeChallenge.id);
-    }
-
-    if (validation.status === "wrong") {
+    } else if (validation.status === "wrong") {
       setShowExpected(true);
+      breakStreak();
     }
 
     setIsLoading(false);
-  }, [sql, dbReady, activeChallenge, markComplete]);
+  }, [sql, dbReady, activeChallenge, markComplete, breakStreak]);
 
   const handleSandboxRun = useCallback(async () => {
     if (!sandboxSql.trim() || !dbReady) return;
@@ -175,6 +177,9 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
+          {/* XP & Streak display */}
+          <StatsBar xp={xp} streak={streak} level={level} />
+
           {/* Industry selector for practice mode */}
           {mode === "practice" && (
             <select
@@ -233,11 +238,9 @@ export default function Home() {
             <span className="md:hidden">Ref</span>
           </button>
 
-          {/* DB status */}
-          {!dbReady ? (
-            <span className="text-xs" style={{ color: "var(--color-warning)" }}>Loading...</span>
-          ) : (
-            <span className="hidden text-xs md:inline" style={{ color: "var(--color-success)" }}>Ready</span>
+          {/* DB status — only relevant for modes that use the database */}
+          {(mode === "learn" || mode === "practice" || mode === "sandbox") && !dbReady && (
+            <span className="text-xs animate-pulse" style={{ color: "var(--color-warning)" }}>Loading DB...</span>
           )}
         </div>
       </header>
@@ -269,6 +272,10 @@ export default function Home() {
           <QuizView
             isSidebarOpen={quizSidebarOpen}
             onToggleSidebar={() => setQuizSidebarOpen(false)}
+            onAnswer={recordQuizAnswer}
+            onWrong={breakStreak}
+            streak={streak}
+            xp={xp}
           />
           {cheatSheetOpen && (
             <CheatSheet isOpen={cheatSheetOpen} onClose={() => setCheatSheetOpen(false)} />

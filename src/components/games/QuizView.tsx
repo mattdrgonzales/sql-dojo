@@ -26,14 +26,25 @@ const typeIcons: Record<string, string> = {
 interface QuizViewProps {
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
+  onAnswer: (moduleId: string, correct: boolean) => void;
+  onWrong: () => void;
+  streak: number;
+  xp: number;
 }
 
-export default function QuizView({ isSidebarOpen, onToggleSidebar }: QuizViewProps) {
+export default function QuizView({
+  isSidebarOpen,
+  onToggleSidebar,
+  onAnswer,
+  onWrong,
+  streak,
+}: QuizViewProps) {
   const [activeModule, setActiveModule] = useState<GameModule>(gameModuleOrder[0]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState(0);
   const [questionAnswered, setQuestionAnswered] = useState(false);
+  const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
 
   const moduleQuestions = useMemo(() => getQuestionsByModule(activeModule), [activeModule]);
   const currentQuestion = moduleQuestions[currentIndex] ?? null;
@@ -41,13 +52,17 @@ export default function QuizView({ isSidebarOpen, onToggleSidebar }: QuizViewPro
 
   const handleAnswer = useCallback((correct: boolean) => {
     setQuestionAnswered(true);
+    setLastCorrect(correct);
     if (correct) setScore((s) => s + 1);
     setAnswered((a) => a + 1);
-  }, []);
+    onAnswer(activeModule, correct);
+    if (!correct) onWrong();
+  }, [activeModule, onAnswer, onWrong]);
 
   const handleNext = useCallback(() => {
     setCurrentIndex((i) => i + 1);
     setQuestionAnswered(false);
+    setLastCorrect(null);
   }, []);
 
   const handleRestart = useCallback(() => {
@@ -55,6 +70,7 @@ export default function QuizView({ isSidebarOpen, onToggleSidebar }: QuizViewPro
     setScore(0);
     setAnswered(0);
     setQuestionAnswered(false);
+    setLastCorrect(null);
   }, []);
 
   const handleModuleChange = useCallback((mod: GameModule) => {
@@ -63,10 +79,10 @@ export default function QuizView({ isSidebarOpen, onToggleSidebar }: QuizViewPro
     setScore(0);
     setAnswered(0);
     setQuestionAnswered(false);
+    setLastCorrect(null);
   }, []);
 
   const renderQuestion = (q: Question) => {
-    // Use key to force remount on question change
     switch (q.type) {
       case "multiple-choice":
         return <MultipleChoice key={q.id} question={q} onAnswer={handleAnswer} />;
@@ -78,6 +94,17 @@ export default function QuizView({ isSidebarOpen, onToggleSidebar }: QuizViewPro
         return <FillBlank key={q.id} question={q} onAnswer={handleAnswer} />;
     }
   };
+
+  const scorePercent = answered > 0 ? Math.round((score / answered) * 100) : 0;
+  const finalGrade = score === moduleQuestions.length
+    ? "S"
+    : scorePercent >= 90
+      ? "A"
+      : scorePercent >= 70
+        ? "B"
+        : scorePercent >= 50
+          ? "C"
+          : "D";
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -170,45 +197,99 @@ export default function QuizView({ isSidebarOpen, onToggleSidebar }: QuizViewPro
             </div>
           </div>
 
-          {/* Score display */}
-          {answered > 0 && (
+          {/* Live score + streak */}
+          {answered > 0 && !isComplete && (
             <div className="mb-4 flex items-center gap-4 text-sm"
               style={{ color: "var(--color-text-tertiary)" }}
             >
               <span>
-                Score: <span style={{ color: "var(--color-success)" }}>{score}</span> / {answered}
+                <span style={{ color: "var(--color-success)", fontFamily: "var(--font-code)" }}>{score}</span>
+                <span> / {answered}</span>
               </span>
-              <span>
-                {answered > 0 ? Math.round((score / answered) * 100) : 0}%
-              </span>
+              {streak > 0 && (
+                <span className="flex items-center gap-1" style={{ color: "var(--color-cta)" }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 2L3 14h9l-1 10 10-12h-9l1-10z" />
+                  </svg>
+                  {streak} streak
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Feedback flash */}
+          {questionAnswered && lastCorrect !== null && (
+            <div
+              className="mb-4 rounded-lg px-4 py-2 text-sm font-medium transition-all"
+              style={{
+                background: lastCorrect ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)",
+                border: `1px solid ${lastCorrect ? "var(--color-success)" : "var(--color-error)"}`,
+                color: lastCorrect ? "var(--color-success)" : "var(--color-error)",
+              }}
+            >
+              {lastCorrect
+                ? streak >= 3
+                  ? `+10 XP — ${streak} streak!`
+                  : "+10 XP"
+                : "Streak reset — keep going!"}
             </div>
           )}
 
           {/* Question content */}
           {isComplete ? (
             <div className="flex flex-col items-center gap-6 py-12 text-center">
-              <div className="text-4xl"
+              {/* Grade badge */}
+              <div
+                className="flex h-20 w-20 items-center justify-center rounded-full text-3xl font-black"
                 style={{
                   fontFamily: "var(--font-code)",
-                  color: score === moduleQuestions.length ? "var(--color-success)" : "var(--color-primary)",
+                  background: finalGrade === "S"
+                    ? "rgba(245, 158, 11, 0.15)"
+                    : finalGrade === "A"
+                      ? "rgba(34, 197, 94, 0.15)"
+                      : "rgba(6, 182, 212, 0.15)",
+                  border: `2px solid ${finalGrade === "S"
+                    ? "var(--color-cta)"
+                    : finalGrade === "A"
+                      ? "var(--color-success)"
+                      : "var(--color-primary)"}`,
+                  color: finalGrade === "S"
+                    ? "var(--color-cta)"
+                    : finalGrade === "A"
+                      ? "var(--color-success)"
+                      : "var(--color-primary)",
                 }}
               >
-                {score} / {moduleQuestions.length}
+                {finalGrade}
               </div>
+
+              <div>
+                <div className="text-3xl font-bold" style={{ fontFamily: "var(--font-code)", color: "var(--color-text)" }}>
+                  {score} / {moduleQuestions.length}
+                </div>
+                <p className="mt-1 text-sm" style={{ color: "var(--color-text-tertiary)" }}>
+                  {scorePercent}% correct
+                </p>
+              </div>
+
               <p className="text-lg font-medium" style={{ color: "var(--color-text)" }}>
-                {score === moduleQuestions.length
-                  ? "Perfect score!"
-                  : score >= moduleQuestions.length * 0.7
-                    ? "Solid work."
-                    : "Keep practicing."}
+                {finalGrade === "S"
+                  ? "Flawless. You own this."
+                  : finalGrade === "A"
+                    ? "Strong run. Almost perfect."
+                    : finalGrade === "B"
+                      ? "Solid work. Review what you missed."
+                      : "Keep practicing. You'll get there."}
               </p>
-              <p className="text-sm" style={{ color: "var(--color-text-tertiary)" }}>
+
+              <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
                 {gameModuleLabels[activeModule]} complete
               </p>
+
               <div className="flex gap-3">
                 <button
                   onClick={handleRestart}
-                  className="cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors focus-ring"
+                  className="cursor-pointer rounded-md px-4 py-2.5 text-sm font-medium transition-colors focus-ring"
                   style={{
                     border: "1px solid var(--color-border)",
                     color: "var(--color-text-secondary)",
@@ -224,7 +305,7 @@ export default function QuizView({ isSidebarOpen, onToggleSidebar }: QuizViewPro
                         handleModuleChange(gameModuleOrder[nextIdx]);
                       }
                     }}
-                    className="cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors focus-ring"
+                    className="cursor-pointer rounded-md px-4 py-2.5 text-sm font-medium transition-colors focus-ring"
                     style={{
                       background: "var(--color-primary)",
                       color: "var(--color-background)",
