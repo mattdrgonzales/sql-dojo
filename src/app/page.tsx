@@ -152,7 +152,7 @@ export default function Home() {
           <h1 className="text-base font-bold tracking-tight md:text-lg"
             style={{ fontFamily: "var(--font-heading)", color: "var(--color-text)" }}
           >
-            SQL <span style={{ color: "var(--color-primary)" }}>Dojo</span>
+            SQL<span style={{ color: "var(--color-primary)" }}>Bot</span>
           </h1>
 
           <nav className="flex gap-0.5 rounded-lg p-0.5"

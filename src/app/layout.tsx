@@ -15,7 +15,7 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SQL Dojo",
+  title: "SQLBot",
   description: "Interactive SQL learning through real-world business challenges",
 };
 
