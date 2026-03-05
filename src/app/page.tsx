@@ -13,10 +13,11 @@ import { ChallengeDetail } from "@/components/challenge/ChallengeCard";
 import SchemaViewer from "@/components/schema/SchemaViewer";
 import Sidebar from "@/components/layout/Sidebar";
 import LessonView from "@/components/learn/LessonView";
+import QuizView from "@/components/games/QuizView";
 import CheatSheet from "@/components/reference/CheatSheet";
 import { useProgress } from "@/hooks/useProgress";
 
-type AppMode = "learn" | "practice" | "sandbox";
+type AppMode = "learn" | "quiz" | "practice" | "sandbox";
 
 export default function Home() {
   const [mode, setMode] = useState<AppMode>("learn");
@@ -34,6 +35,7 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cheatSheetOpen, setCheatSheetOpen] = useState(false);
   const [learnSidebarOpen, setLearnSidebarOpen] = useState(false);
+  const [quizSidebarOpen, setQuizSidebarOpen] = useState(false);
 
   // Sandbox state
   const [sandboxSql, setSandboxSql] = useState("");
@@ -118,6 +120,7 @@ export default function Home() {
 
   const modeButtons: { key: AppMode; label: string }[] = [
     { key: "learn", label: "Learn" },
+    { key: "quiz", label: "Quiz" },
     { key: "practice", label: "Practice" },
     { key: "sandbox", label: "Sandbox" },
   ];
@@ -130,9 +133,13 @@ export default function Home() {
       >
         <div className="flex items-center gap-3 md:gap-6">
           {/* Mobile menu button */}
-          {(mode === "practice" || mode === "learn") && (
+          {(mode === "practice" || mode === "learn" || mode === "quiz") && (
             <button
-              onClick={() => mode === "practice" ? setSidebarOpen(true) : setLearnSidebarOpen(true)}
+              onClick={() => {
+                if (mode === "practice") setSidebarOpen(true);
+                else if (mode === "learn") setLearnSidebarOpen(true);
+                else if (mode === "quiz") setQuizSidebarOpen(true);
+              }}
               className="cursor-pointer rounded p-1 transition-colors hover:bg-white/5 lg:hidden focus-ring"
               aria-label="Open menu"
             >
@@ -256,6 +263,19 @@ export default function Home() {
         </div>
       )}
 
+      {/* Quiz mode */}
+      {mode === "quiz" && (
+        <div className="flex flex-1 overflow-hidden">
+          <QuizView
+            isSidebarOpen={quizSidebarOpen}
+            onToggleSidebar={() => setQuizSidebarOpen(false)}
+          />
+          {cheatSheetOpen && (
+            <CheatSheet isOpen={cheatSheetOpen} onClose={() => setCheatSheetOpen(false)} />
+          )}
+        </div>
+      )}
+
       {/* Practice mode */}
       {mode === "practice" && (
         <div className="flex flex-1 overflow-hidden">
@@ -299,7 +319,7 @@ export default function Home() {
                           className="cursor-pointer text-xs transition-colors"
                           style={{ color: "var(--color-warning)" }}
                         >
-                          {showExpected ? "Show expected" : "Hide expected"}
+                          {showExpected ? "Hide expected" : "Show expected"}
                         </button>
                       )}
                     </div>
