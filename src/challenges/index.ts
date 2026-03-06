@@ -2,6 +2,7 @@ import { healthcareChallenges } from "./healthcare";
 import { insuranceChallenges } from "./insurance";
 import { retailChallenges } from "./retail";
 import { educationChallenges } from "./education";
+import { tiaChallenges } from "./tia";
 import type { Challenge, Industry, Tier } from "./types";
 
 const challengesByIndustry: Record<Industry, Challenge[]> = {
@@ -9,6 +10,7 @@ const challengesByIndustry: Record<Industry, Challenge[]> = {
   insurance: insuranceChallenges,
   retail: retailChallenges,
   education: educationChallenges,
+  tia: tiaChallenges,
 };
 
 export function getChallenges(industry: Industry): Challenge[] {

@@ -1,5 +1,5 @@
 export type Tier = 1 | 2 | 3 | 4 | 5;
-export type Industry = "healthcare" | "insurance" | "retail" | "education";
+export type Industry = "healthcare" | "insurance" | "retail" | "education" | "tia";
 
 export interface Challenge {
   id: string;
@@ -48,6 +48,13 @@ export const industries: IndustryConfig[] = [
     icon: "🎓",
     description: "Students, courses, enrollments, and grades",
     color: "#CA8A04",
+  },
+  {
+    id: "tia",
+    name: "Tia Health",
+    icon: "💜",
+    description: "Memberships, claims, services, partnerships, and patient LTV",
+    color: "#A855F7",
   },
 ];
 

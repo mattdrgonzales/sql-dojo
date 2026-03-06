@@ -6,6 +6,8 @@ import { retailSchema, retailTableInfo } from "./retail/schema";
 import { generateRetailSeed } from "./retail/seed";
 import { educationSchema, educationTableInfo } from "./education/schema";
 import { generateEducationSeed } from "./education/seed";
+import { tiaSchema, tiaTableInfo } from "./tia/schema";
+import { generateTiaSeed } from "./tia/seed";
 import type { Industry } from "../challenges/types";
 
 export interface TableInfo {
@@ -40,5 +42,10 @@ export const industryData: Record<Industry, IndustryData> = {
     schema: educationSchema,
     seed: generateEducationSeed,
     tables: educationTableInfo,
+  },
+  tia: {
+    schema: tiaSchema,
+    seed: generateTiaSeed,
+    tables: tiaTableInfo,
   },
 };
